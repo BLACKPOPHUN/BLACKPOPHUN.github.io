@@ -31,9 +31,14 @@ textarea[readonly]{background:#222;}
 .editing-indicator{color:#ff9800;font-size:12px;margin-top:5px;display:none;}
 #add-script-btn{background:#4caf50;width:90%;max-width:700px;display:none;margin:20px auto;font-size:18px;padding:15px;}
 #add-script-btn:hover{background:#45a049;}
+.loading{text-align:center;color:#888;padding:20px;}
+.online-users{position:fixed;left:10px;top:10px;background:#333;padding:10px;border-radius:8px;font-size:12px;max-width:150px;}
+.online-dot{display:inline-block;width:8px;height:8px;background:#4caf50;border-radius:50%;margin-right:5px;animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.5;}}
 @media(max-width:480px){
     h2{font-size:24px;}
     #logout, #username-btn{padding:10px 12px;font-size:14px;}
+    .online-users{position:static;margin-bottom:10px;}
 }
 </style>
 </head>
@@ -59,7 +64,9 @@ textarea[readonly]{background:#222;}
 
 <!-- Scripts -->
 <div id="script-container" style="display:none;">
+<div id="online-users" class="online-users"></div>
 <h2>Script Roblox</h2>
+<div id="loading" class="loading">กำลังโหลด...</div>
 <div id="scripts-list"></div>
 <button id="add-script-btn" onclick="addNewScript()">➕ เพิ่มช่อง Script ใหม่</button>
 </div>
@@ -75,6 +82,7 @@ let loginTime = null;
 let intervalTimer = null;
 let syncTimer = null;
 let scripts = [];
+let sessionId = Date.now() + '_' + Math.random().toString(36).substr(2, 9);
 
 // ====== INITIAL SCRIPTS DATA ======
 const initialScripts = [
@@ -118,6 +126,35 @@ loadstring(game:HttpGet(("https://raw.githubusercontent.com/BLACKPOPHUN/script-B
     }
 ];
 
+// ====== STORAGE HELPERS ======
+async function getSharedData(key) {
+    try {
+        const result = await window.storage.get(key, true);
+        return result ? JSON.parse(result.value) : null;
+    } catch (error) {
+        return null;
+    }
+}
+
+async function setSharedData(key, value) {
+    try {
+        await window.storage.set(key, JSON.stringify(value), true);
+        return true;
+    } catch (error) {
+        console.error('Storage error:', error);
+        return false;
+    }
+}
+
+async function deleteSharedData(key) {
+    try {
+        await window.storage.delete(key, true);
+        return true;
+    } catch (error) {
+        return false;
+    }
+}
+
 // ====== LOGIN & REGISTER ======
 function showRegister(){ 
     document.getElementById('login-container').style.display='none'; 
@@ -134,28 +171,28 @@ function openCodeSite(){
     window.open("https://sub2unlock.me/MjMZMF6","_blank");
 }
 
-function login(){
+async function login(){
     const u = document.getElementById("login-username").value.trim();
     const p = document.getElementById("login-password").value.trim();
 
     if(u==="BP0998" && p==="9980"){
-        currentUser = {username:"BP0998", admin:false, lastLogin:new Date().toLocaleString()};
+        currentUser = {username:"BP0998", admin:false, lastLogin:new Date().toLocaleString(), sessionId:sessionId};
         localStorage.setItem("logged_in_user", JSON.stringify(currentUser));
-        showScript();
+        await showScript();
         return;
     }
 
     if(u==="admin" && p==="2337952"){
-        currentUser = {username:"admin", admin:true, lastLogin:new Date().toLocaleString()};
+        currentUser = {username:"admin", admin:true, lastLogin:new Date().toLocaleString(), sessionId:sessionId};
         localStorage.setItem("logged_in_user", JSON.stringify(currentUser));
-        showScript();
+        await showScript();
         return;
     }
 
     document.getElementById("login-msg").innerText = "Username หรือ Password ไม่ถูกต้อง";
 }
 
-function showScript(){
+async function showScript(){
     document.getElementById('login-container').style.display='none';
     document.getElementById('register-container').style.display='none';
     document.getElementById('script-container').style.display='block';
@@ -170,15 +207,25 @@ function showScript(){
         document.getElementById('add-script-btn').style.display='block';
     }
     
+    // อัพเดทสถานะออนไลน์
+    await updateOnlineStatus();
+    
     // โหลดข้อมูล Scripts
-    loadScripts();
+    await loadScripts();
     renderScripts();
+    
+    document.getElementById('loading').style.display='none';
     
     // เริ่มระบบ Real-time Sync
     startRealtimeSync();
 }
 
-function logout(){
+async function logout(){
+    // ลบสถานะออนไลน์
+    if(currentUser){
+        await deleteSharedData('online:' + currentUser.sessionId);
+    }
+    
     currentUser=null;
     clearInterval(intervalTimer);
     clearInterval(syncTimer);
@@ -189,19 +236,65 @@ function logout(){
     showLogin();
 }
 
-// ====== SCRIPTS MANAGEMENT ======
-function loadScripts(){
-    const saved = localStorage.getItem('scripts_data');
-    if(saved){
-        scripts = JSON.parse(saved);
-    } else {
-        scripts = [...initialScripts];
-        saveScripts();
+// ====== ONLINE STATUS ======
+async function updateOnlineStatus(){
+    if(!currentUser) return;
+    
+    const onlineData = {
+        username: currentUser.username,
+        timestamp: Date.now()
+    };
+    
+    await setSharedData('online:' + currentUser.sessionId, onlineData);
+}
+
+async function getOnlineUsers(){
+    try {
+        const result = await window.storage.list('online:', true);
+        if(!result || !result.keys) return [];
+        
+        const now = Date.now();
+        const onlineUsers = [];
+        
+        for(const key of result.keys){
+            try {
+                const data = await getSharedData(key);
+                if(data && (now - data.timestamp) < 10000){ // ออนไลน์ภายใน 10 วินาที
+                    onlineUsers.push(data.username);
+                } else {
+                    // ลบ session ที่หมดอายุ
+                    await deleteSharedData(key);
+                }
+            } catch(e){}
+        }
+        
+        return onlineUsers;
+    } catch(error){
+        return [];
     }
 }
 
-function saveScripts(){
-    localStorage.setItem('scripts_data', JSON.stringify(scripts));
+async function updateOnlineDisplay(){
+    const users = await getOnlineUsers();
+    const box = document.getElementById('online-users');
+    if(box && users.length > 0){
+        box.innerHTML = '<span class="online-dot"></span>ออนไลน์: ' + users.join(', ');
+    }
+}
+
+// ====== SCRIPTS MANAGEMENT ======
+async function loadScripts(){
+    const saved = await getSharedData('scripts_data');
+    if(saved && saved.length > 0){
+        scripts = saved;
+    } else {
+        scripts = [...initialScripts];
+        await saveScripts();
+    }
+}
+
+async function saveScripts(){
+    await setSharedData('scripts_data', scripts);
 }
 
 function renderScripts(){
@@ -236,14 +329,14 @@ function createScriptBox(script){
     
     html += `
         <div id="text-${script.id}-msg" class="msg">✔</div>
-        <div id="editing-${script.id}" class="editing-indicator">🔴 แอดมินกำลังแก้ไข...</div>
+        <div id="editing-${script.id}" class="editing-indicator">🔴 กำลังแก้ไข...</div>
     `;
     
     box.innerHTML = html;
     return box;
 }
 
-function addNewScript(){
+async function addNewScript(){
     const newId = Date.now();
     const newScript = {
         id: newId,
@@ -252,25 +345,25 @@ function addNewScript(){
     };
     
     scripts.push(newScript);
-    saveScripts();
+    await saveScripts();
     renderScripts();
     
     // เปิดโหมดแก้ไขทันที
     setTimeout(() => editScript(newId), 100);
 }
 
-function deleteScript(id){
+async function deleteScript(id){
     if(!confirm('คุณแน่ใจหรือไม่ที่จะลบช่องนี้?')) return;
     
     scripts = scripts.filter(s => s.id !== id);
-    saveScripts();
+    await saveScripts();
     renderScripts();
 }
 
 // ====== EDIT SYSTEM ======
 let originalContent = {};
 
-function editScript(id){
+async function editScript(id){
     const textarea = document.getElementById('text-' + id);
     const title = document.getElementById('title-' + id);
     
@@ -294,11 +387,14 @@ function editScript(id){
     if(saveBtn) saveBtn.style.display='inline-block';
     if(cancelBtn) cancelBtn.style.display='inline-block';
     
-    localStorage.setItem('editing_' + id, 'true');
-    localStorage.setItem('editing_by', currentUser.username);
+    // บันทึกสถานะการแก้ไขแบบ shared
+    await setSharedData('editing:' + id, {
+        username: currentUser.username,
+        timestamp: Date.now()
+    });
 }
 
-function saveScript(id){
+async function saveScript(id){
     const textarea = document.getElementById('text-' + id);
     const title = document.getElementById('title-' + id);
     
@@ -308,7 +404,7 @@ function saveScript(id){
     if(scriptIndex !== -1){
         scripts[scriptIndex].title = title.innerText;
         scripts[scriptIndex].content = textarea.value;
-        saveScripts();
+        await saveScripts();
     }
     
     textarea.readOnly = true;
@@ -324,13 +420,12 @@ function saveScript(id){
     if(saveBtn) saveBtn.style.display='none';
     if(cancelBtn) cancelBtn.style.display='none';
     
-    localStorage.removeItem('editing_' + id);
-    localStorage.removeItem('editing_by');
+    await deleteSharedData('editing:' + id);
     
     showMsg('text-' + id);
 }
 
-function cancelEdit(id){
+async function cancelEdit(id){
     const textarea = document.getElementById('text-' + id);
     const title = document.getElementById('title-' + id);
     
@@ -354,8 +449,7 @@ function cancelEdit(id){
     if(saveBtn) saveBtn.style.display='none';
     if(cancelBtn) cancelBtn.style.display='none';
     
-    localStorage.removeItem('editing_' + id);
-    localStorage.removeItem('editing_by');
+    await deleteSharedData('editing:' + id);
 }
 
 // ====== UTILITY FUNCTIONS ======
@@ -379,36 +473,42 @@ function toggleUserTime(){
 }
 
 function startTimer(){
-    intervalTimer = setInterval(() => {
+    intervalTimer = setInterval(async () => {
         if(!currentUser) return;
         let timeHTML = `เวลาอยู่ในเว็บ: ${Math.floor((new Date()-loginTime)/1000)} วินาที<br>`;
         timeHTML += `เวลาเข้าสู่ระบบล่าสุด: ${currentUser.lastLogin}`;
         document.getElementById('user-time-box').innerHTML = timeHTML;
-    }, 500);
+        
+        // อัพเดทสถานะออนไลน์ทุก 5 วินาที
+        await updateOnlineStatus();
+    }, 5000);
 }
 
 // ====== REAL-TIME SYNC ======
 function startRealtimeSync(){
-    syncTimer = setInterval(() => {
-        scripts.forEach(script => {
+    syncTimer = setInterval(async () => {
+        // อัพเดทรายชื่อผู้ใช้ออนไลน์
+        await updateOnlineDisplay();
+        
+        // ตรวจสอบการแก้ไขของแต่ละ script
+        for(const script of scripts){
             const id = script.id;
-            const isEditing = localStorage.getItem('editing_' + id);
-            const editingBy = localStorage.getItem('editing_by');
+            const editingData = await getSharedData('editing:' + id);
             const indicator = document.getElementById('editing-' + id);
             
-            if(!indicator) return;
+            if(!indicator) continue;
             
-            if(isEditing === 'true' && editingBy !== currentUser.username){
+            if(editingData && editingData.username !== currentUser.username){
                 indicator.style.display = 'block';
-                indicator.innerText = `🔴 ${editingBy} กำลังแก้ไข...`;
+                indicator.innerText = `🔴 ${editingData.username} กำลังแก้ไข...`;
             } else {
                 indicator.style.display = 'none';
             }
             
-            if(editingBy !== currentUser.username){
-                const savedData = localStorage.getItem('scripts_data');
-                if(savedData){
-                    const savedScripts = JSON.parse(savedData);
+            // ซิงค์เนื้อหาถ้าไม่ได้แก้ไขเอง
+            if(!editingData || editingData.username !== currentUser.username){
+                const savedScripts = await getSharedData('scripts_data');
+                if(savedScripts){
                     const savedScript = savedScripts.find(s => s.id === id);
                     const textarea = document.getElementById('text-' + id);
                     const title = document.getElementById('title-' + id);
@@ -423,18 +523,35 @@ function startRealtimeSync(){
                     }
                 }
             }
-        });
-    }, 500);
+        }
+        
+        // ตรวจสอบว่ามีการเพิ่ม/ลบ script หรือไม่
+        const currentScripts = await getSharedData('scripts_data');
+        if(currentScripts && JSON.stringify(currentScripts.map(s => s.id)) !== JSON.stringify(scripts.map(s => s.id))){
+            scripts = currentScripts;
+            renderScripts();
+        }
+    }, 1000);
 }
 
 // ====== AUTO-LOGIN ======
-window.onload = function(){
+window.onload = async function(){
     const stored = localStorage.getItem("logged_in_user");
     if(stored){
         currentUser = JSON.parse(stored);
-        showScript();
+        // สร้าง sessionId ใหม่
+        currentUser.sessionId = sessionId;
+        localStorage.setItem("logged_in_user", JSON.stringify(currentUser));
+        await showScript();
     }
 }
+
+// ====== CLEANUP ON PAGE UNLOAD ======
+window.addEventListener('beforeunload', async () => {
+    if(currentUser){
+        await deleteSharedData('online:' + currentUser.sessionId);
+    }
+});
 </script>
 
 </body>

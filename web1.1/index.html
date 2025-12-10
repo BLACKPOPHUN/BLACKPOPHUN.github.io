@@ -643,6 +643,65 @@ window.addEventListener('beforeunload', async () => {
     }
 });
 </script>
+<script>
+// ====== CLEAR DATA EXCEPT LOGIN ON PAGE LOAD ======
+async function clearDataExceptLogin() {
+    // เก็บข้อมูลผู้ใช้ปัจจุบัน
+    const currentUserData = localStorage.getItem("logged_in_user");
+
+    // ลบ localStorage อื่นทั้งหมด
+    localStorage.clear();
+
+    // คืนค่า logged_in_user กลับ
+    if(currentUserData){
+        localStorage.setItem("logged_in_user", currentUserData);
+    }
+
+    // ลบข้อมูล window.storage ถ้ามี
+    if (typeof window.storage !== 'undefined') {
+        try {
+            const keys = await window.storage.list('', true);
+            if (keys && keys.keys) {
+                for (const key of keys.keys) {
+                    // ไม่ลบ key ที่เกี่ยวข้องกับผู้ใช้ที่ล็อกอิน
+                    if(currentUserData){
+                        const user = JSON.parse(currentUserData);
+                        if(key.startsWith('online:') && key.includes(user.sessionId)) continue;
+                    }
+                    await window.storage.delete(key, true);
+                }
+            }
+        } catch (e) {
+            console.error("⚠️ ลบ window.storage ไม่สำเร็จ:", e);
+        }
+    }
+
+    console.log("✅ ลบข้อมูลทั้งหมด ยกเว้นล็อกอิน");
+}
+
+// ====== WINDOW ONLOAD ======
+window.onload = async function(){
+    await checkStorage();
+
+    // ลบข้อมูลเก่าทุกครั้งที่เข้าหน้าเว็บ
+    await clearDataExceptLogin();
+
+    // ตรวจสอบ auto-login
+    const stored = localStorage.getItem("logged_in_user");
+    if(stored){
+        try {
+            currentUser = JSON.parse(stored);
+            // สร้าง sessionId ใหม่
+            currentUser.sessionId = sessionId;
+            localStorage.setItem("logged_in_user", JSON.stringify(currentUser));
+            await showScript();
+        } catch(e) {
+            console.error('Error auto-login:', e);
+            showLogin();
+        }
+    }
+}
+</script>
 <script type="module">
 // Import the functions you need from the SDKs you need
 import { initializeApp } from "firebase/app";

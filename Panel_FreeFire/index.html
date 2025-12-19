@@ -32,7 +32,6 @@ margin-bottom:25px;
 text-shadow:0 0 10px red;
 }
 
-/* ปุ่มหลัก */
 .control-btn{
 width:100%;
 padding:16px;
@@ -47,19 +46,16 @@ transition:0.25s;
 box-shadow:0 0 12px rgba(255,0,0,.6);
 }
 
-/* FREE */
 .free{
 background:linear-gradient(90deg,#ff0000,#ff5555);
 }
 
-/* VIP */
 .vip{
 background:linear-gradient(90deg,#ffaa00,#ffdd55);
 color:#000;
 box-shadow:0 0 15px gold;
 }
 
-/* เปิดแล้ว */
 .active{
 background:linear-gradient(90deg,#00cc44,#55ff88)!important;
 color:#000!important;
@@ -93,43 +89,71 @@ color:#ccc;
 </div>
 
 <script>
-let freeOn = false;
-let vipOn = false;
+/* 🔥 เปลี่ยนเลขนี้เมื่อแก้โค้ด */
+const WEB_VERSION = "0.0.1";
 
-/* ปุ่ม FREE */
+/* เช็กเวอร์ชัน */
+const savedVersion = localStorage.getItem("web_version");
+if(savedVersion !== WEB_VERSION){
+localStorage.clear();
+localStorage.setItem("web_version", WEB_VERSION);
+}
+
+/* โหลดสถานะ */
+let freeOn = localStorage.getItem("freeOn") === "true";
+let vipOn  = localStorage.getItem("vipOn") === "true";
+
+const btnFree = document.getElementById("btnFree");
+const btnVip  = document.getElementById("btnVip");
+const status  = document.getElementById("statusText");
+
+updateUI();
+
+/* FREE */
 function toggleFree(){
 freeOn = !freeOn;
-const btn = document.getElementById("btnFree");
-
-if(freeOn){
-btn.classList.add("active");
-btn.innerHTML = "☠️ ล็อกหัว(84%) : เปิดอยู่";
-document.getElementById("statusText").innerText =
-"สถานะระบบ : เปิดโหมด ล็อกหัว แล้ว";
-}else{
-btn.classList.remove("active");
-btn.innerHTML = "☠️ ล็อกหัว(84%) : ปิดอยู่";
-document.getElementById("statusText").innerText =
-"สถานะระบบ : ปิดโหมด ล็อกหัว";
-}
+saveState();
+updateUI();
 }
 
-/* ปุ่ม VIP */
+/* VIP */
 function toggleVip(){
 vipOn = !vipOn;
-const btn = document.getElementById("btnVip");
-
-if(vipOn){
-btn.classList.add("active");
-btn.innerHTML = "🖥️ จอลื่น : เปิดอยู่";
-document.getElementById("statusText").innerText =
-"สถานะระบบ : เปิดโหมด จอลื่น แล้ว";
-}else{
-btn.classList.remove("active");
-btn.innerHTML = "🖥️ จอลื่น : ปิดอยู่";
-document.getElementById("statusText").innerText =
-"สถานะระบบ : ปิดโหมด จอลื่น";
+saveState();
+updateUI();
 }
+
+/* UI */
+function updateUI(){
+
+// FREE
+btnFree.classList.toggle("active", freeOn);
+btnFree.innerHTML = freeOn
+? "☠️ ล็อกหัว(84%) : เปิดอยู่"
+: "☠️ ล็อกหัว(84%) : ปิดอยู่";
+
+// VIP
+btnVip.classList.toggle("active", vipOn);
+btnVip.innerHTML = vipOn
+? "🖥️ จอลื่น : เปิดอยู่"
+: "🖥️ จอลื่น : ปิดอยู่";
+
+// STATUS
+if(freeOn && vipOn){
+status.innerText = "สถานะระบบ : เปิดทั้ง 2 โหมด แล้ว";
+}else if(freeOn){
+status.innerText = "สถานะระบบ : เปิดโหมด ล็อกหัว";
+}else if(vipOn){
+status.innerText = "สถานะระบบ : เปิดโหมด จอลื่น";
+}else{
+status.innerText = "สถานะระบบ : ยังไม่เปิดใช้งาน";
+}
+}
+
+/* Save */
+function saveState(){
+localStorage.setItem("freeOn", freeOn);
+localStorage.setItem("vipOn", vipOn);
 }
 </script>
 

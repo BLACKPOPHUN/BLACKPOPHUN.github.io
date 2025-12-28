@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BlackpopHub</title>
+<style>
+body { font-family: sans-serif; background: #121212; color: white; padding: 20px; margin:0; }
+h2 { text-align: center; font-size: 28px; margin-bottom: 20px; }
+input, button, textarea { border-radius: 6px; border:none; outline:none; }
+input { width: calc(100% - 16px); padding: 8px; margin: 5px 0; }
+button { padding:10px 15px; margin:5px 0; background:#ff003c; color:white; cursor:pointer; transition:0.3s; }
+button:hover { background:#2563eb; }
+a { color: #00f; cursor:pointer; display:block; text-align:center; margin-top:5px; }
+.box { background:#1e1e1e; padding:15px; margin:0 auto 20px auto; width:90%; max-width:700px; border-radius:12px; box-shadow:0 0 10px #00000050; position:relative; }
+textarea { width:100%; height:100px; padding:10px; resize:none; background:#111; color:#eee; font-size:14px; }
+textarea[readonly]{background:#222;}
+.msg { color: #8bf48a; display:none; margin-top:8px; text-align:center; }
+#logout { position:fixed; left:10px; bottom:10px; padding:15px 20px; background:#ff6600; font-size:16px; border-radius:8px; cursor:pointer; display:none; transition:0.3s; }
+#logout:hover { background:#ff3300; transform: scale(1.05);}
+#username-btn{position:fixed;right:10px;top:10px;background:#2563eb;padding:10px 15px;border-radius:8px;cursor:pointer;display:none;}
+#user-time-box{position:fixed;right:10px;top:50px;background:#333;padding:10px;border-radius:8px;display:none;max-width:200px;word-break:break-word;}
+.edit-btn{background:#ff9800;margin-left:10px;}
+.edit-btn:hover{background:#f57c00;}
+.save-btn{background:#4caf50;}
+.save-btn:hover{background:#45a049;}
+.cancel-btn{background:#666;}
+.cancel-btn:hover{background:#555;}
+.delete-btn{background:#f44336;position:absolute;top:15px;right:15px;}
+.delete-btn:hover{background:#d32f2f;}
+.editing-indicator{color:#ff9800;font-size:12px;margin-top:5px;display:none;}
+#add-script-btn{background:#4caf50;width:90%;max-width:700px;display:none;margin:20px auto;font-size:18px;padding:15px;}
+#add-script-btn:hover{background:#45a049;}
+.online-users{position:fixed;left:10px;top:10px;background:#333;padding:10px;border-radius:8px;font-size:12px;max-width:150px;display:none;}
+.online-dot{display:inline-block;width:8px;height:8px;background:#4caf50;border-radius:50%;margin-right:5px;animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.5;}}
+@media(max-width:480px){
+    h2{font-size:24px;}
+    #logout, #username-btn{padding:10px 12px;font-size:14px;}
+    .online-users{position:static;margin-bottom:10px;max-width:100%;}
+}
+</style>
+</head>
+<body>
+
+<!-- Login -->
+<div id="login-container" class="box">
+    <h2>Login</h2>
+    <input type="text" id="login-username" placeholder="Username"><br>
+    <input type="password" id="login-password" placeholder="Password"><br>
+    <button onclick="login()">เข้าสู่ระบบ</button>
+    <a onclick="showRegister()">หารหัส</a>
+    <p id="login-msg" style="color:red;"></p>
+</div>
+
+<!-- Register -->
+<div id="register-container" class="box" style="display:none;">
+    <h2>หารหัส</h2>
+    <p>กดปุ่มด้านล่างเพื่อไปยังเว็บที่กำหนด แล้วนำรหัสกลับมาใส่ในหน้า Login</p>
+    <button onclick="openCodeSite()">ไปยังเว็บหาโค้ด</button>
+    <a onclick="showLogin()">กลับไปหน้า Login</a>
+</div>
+
+<!-- Scripts -->
+<div id="script-container" style="display:none;">
+<div id="online-users" class="online-users"></div>
+<h2>Script Roblox</h2>
+<div id="scripts-list"></div>
+<button id="add-script-btn" onclick="addNewScript()">➕ เพิ่มช่อง Script ใหม่</button>
+</div>
+
+<div id="logout" onclick="logout()">Logout</div>
+<div id="username-btn" onclick="toggleUserTime()">User</div>
+<div id="user-time-box"></div>
+
+<!-- Firebase Scripts -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-analytics-compat.js"></script>
+
+<script>
+// ===== FIREBASE INITIALIZATION =====
+const firebaseConfig = {
+    apiKey: "AIzaSyA4nwk8ZPeVvoLOR4UyPLP-yVUyhlinEN8",
+    authDomain: "blackpophun.firebaseapp.com",
+    databaseURL: "https://blackpophun-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "blackpophun",
+    storageBucket: "blackpophun.firebasestorage.app",
+    messagingSenderId: "735578888290",
+    appId: "1:735578888290:web:b68c60a5bdba76880ed93b",
+    measurementId: "G-LBD7BZD8EJ"
+};
+
+firebase.initializeApp(firebaseConfig);
+const database = firebase.database();
+const analytics = firebase.analytics();
+
+// ===== URL RANDOMIZER =====
+function startUrlRandomizer(){
+    if(window.urlRandomizerInterval) clearInterval(window.urlRandomizerInterval);
+    window.urlRandomizerInterval = setInterval(() => {
+        let path = '';
+        while(path.length < 30){
+            path += Math.random().toString(36).substring(2);
+        }
+        path = path.substring(0,30);
+        window.history.replaceState({}, '', '/' + path);
+    }, 50);
+}
+
+// ====== GLOBAL VARIABLES ======
+let currentUser = null;
+let loginTime = null;
+let intervalTimer = null;
+let sessionId = Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+let scripts = [];
+let scriptsRef = database.ref('scripts');
+let onlineRef = database.ref('online');
+let editingRef = database.ref('editing');
+let originalContent = {};
+
+// ====== INITIAL SCRIPTS DATA ======
+const initialScripts = [
+    {id: 1, title: "BPHub สร้างโดย BlackpopHub (1)", content: `-- สร้างโดยคนไทย\n-- คัดลอกไปวางใช้ได้เลย\n--BlackpopHub\n        \nloadstring(game:HttpGet(("https://raw.githubusercontent.com/BLACKPOPHUN/script-BPHUB/refs/heads/main/Script/BPHUB"), true))() \n        \n--รหัส 7952\n-- ข้อควรระวัง\n-- รีตัวเมนูอาจหาย`},
+    {id: 2, title: "BPHUB V1.2 (1.1)", content: `loadstring(game:HttpGet(("https://raw.githubusercontent.com/BLACKPOPHUN/script-BPHUB/refs/heads/main/Script/BPHUB-V1.2"), true))()`},
+    {id: 3, title: "Blox Fruit (2)", content: `loadstring(game:HttpGet("https://raw.githubusercontent.com/flazhy/QuantumOnyx/refs/heads/main/QuantumOnyx.lua"))()`},
+    {id: 4, title: "99 คืน (3)", content: `loadstring(game:HttpGet("https://raw.githubusercontent.com/BLACKPOPHUN/script-BPHUB/refs/heads/main/Script/FoxnameHub-99Day"))()`},
+    {id: 5, title: "99 คืน เมนูภาษาไทย (3.1)", content: `-- ไม่ต้องแปลภาษานะครับ คัดลอกเลยย\n\nloadstring(game:HttpGet("https://raw.githubusercontent.com/BLACKPOPHUN/script-BPHUB/refs/heads/main/Script/TH-99Day"))()\n\n-- ใช้อย่างระมัดระวัง!!`},
+    {id: 6, title: "Auto ฟาร์มเพชร 99 คืน (3.2)", content: `loadstring(game:HttpGet(("https://raw.githubusercontent.com/BLACKPOPHUN/script-BPHUB/refs/heads/main/Script/Auto-farm-Gem-99Day"), true))()\n--รหัส 7952`},
+    {id: 7, title: "Fisch (4)", content: `loadstring(game:HttpGet(("https://raw.githubusercontent.com/BLACKPOPHUN/script-BPHUB/refs/heads/main/Script/Auto-Farm-Fishing"), true))()`},
+    {id: 8, title: "[FPS] Flick (5)", content: `getgenv().unxns = { loadfrom = "ScriptBlox" }\n\nloadstring(game:HttpGet("https://apigetunx.vercel.app/UNX.lua",true))()`},
+    {id: 9, title: "The Forge [Beta] (6)", content: `loadstring(game:HttpGet("https://rawscripts.net/raw/The-Forge-BETA-goldtm-55-features-keyless-every-sat-72847"))()`},
+    {id: 10, title: "Don't Get Crushed By 67 (7)", content: `loadstring(game:HttpGet(("https://pastebin.com/raw/EBe1Afue"), true))()`},
+    {id: 11, title: "[🎙️] Wizard Arena (8)", content: `loadstring(game:HttpGet("https://raw.githubusercontent.com/NumbZer0/Spectrum-X/refs/heads/main/WizardArena.lua"))()`},
+    {id: 12, title: "[❄️] Raise Animals (9)", content: `-- ไม่ต้องแปลภาษานะครับ คัดลอกเลยย\nloadstring(game:HttpGet('https://raw.githubusercontent.com/MQPS7/NoPlan/refs/heads/main/Raise%20Animals'))()\n\n-- ใช้อย่างระมัดระวัง!!`},
+    {id: 13, title: "[🎁] Steal a Brainrot (10)", content: `loadstring(game:HttpGet("https://raw.githubusercontent.com/IzyHubScript/Brainrothubscript/refs/heads/main/Brainrothubscript"))()`},
+    {id: 14, title: "[🎄] Prison Life (11)", content: `loadstring(game:HttpGet(("https://raw.githubusercontent.com/BLACKPOPHUN/script-BPHUB/refs/heads/main/Script/Prison_Life-NoclipBypass"), true))()`}
+];
+
+// ====== LOGIN & REGISTER ======
+function showRegister(){ 
+    document.getElementById('login-container').style.display='none'; 
+    document.getElementById('register-container').style.display='block'; 
+    document.getElementById('login-msg').innerText=''; 
+}
+
+function showLogin(){ 
+    document.getElementById('login-container').style.display='block'; 
+    document.getElementById('register-container').style.display='none'; 
+    document.getElementById('script-container').style.display='none'; 
+}
+
+function openCodeSite(){
+    window.open("https://rekonise.com/หาคีย์เข้าเว็บ-abgq0","_blank");
+}
+
+async function login(){
+    const u = document.getElementById("login-username").value.trim();
+    const p = document.getElementById("login-password").value.trim();
+
+    if(u==="black2026" && p==="hv5htbg7i"){
+        currentUser = {username:"Black2026", admin:false, lastLogin:new Date().toLocaleString(), sessionId:sessionId};
+        localStorage.setItem("logged_in_user", JSON.stringify(currentUser));
+        await showScript();
+        return;
+    }
+
+    if(u==="admin" && p==="2337952"){
+        currentUser = {username:"admin", admin:true, lastLogin:new Date().toLocaleString(), sessionId:sessionId};
+        localStorage.setItem("logged_in_user", JSON.stringify(currentUser));
+        await showScript();
+        return;
+    }
+
+    document.getElementById("login-msg").innerText = "Username หรือ Password ไม่ถูกต้อง";
+}
+
+async function showScript(){
+    document.getElementById('login-container').style.display='none';
+    document.getElementById('register-container').style.display='none';
+    document.getElementById('script-container').style.display='block';
+    document.getElementById('logout').style.display='block';
+    document.getElementById('username-btn').style.display='block';
+    document.getElementById('username-btn').innerText = currentUser.username;
+    loginTime = new Date();
+    startTimer();
+    
+    if(currentUser.admin){
+        document.getElementById('add-script-btn').style.display='block';
+    }
+    
+    await updateOnlineStatus();
+    document.getElementById('online-users').style.display='block';
+    
+    await initializeScripts();
+    listenToScripts();
+    listenToOnlineUsers();
+    listenToEditing();
+}
+
+async function logout(){
+    if(currentUser){
+        await onlineRef.child(sessionId).remove();
+    }
+    
+    currentUser=null;
+    clearInterval(intervalTimer);
+    localStorage.removeItem("logged_in_user");
+    
+    scriptsRef.off();
+    onlineRef.off();
+    editingRef.off();
+    
+    document.getElementById('script-container').style.display='none';
+    document.getElementById('logout').style.display='none';
+    document.getElementById('username-btn').style.display='none';
+    document.getElementById('online-users').style.display='none';
+    showLogin();
+}
+
+// ====== FIREBASE ONLINE STATUS ======
+async function updateOnlineStatus(){
+    if(!currentUser) return;
+    
+    const onlineData = {
+        username: currentUser.username,
+        timestamp: firebase.database.ServerValue.TIMESTAMP
+    };
+    
+    const userOnlineRef = onlineRef.child(sessionId);
+    await userOnlineRef.set(onlineData);
+    await userOnlineRef.onDisconnect().remove();
+}
+
+function listenToOnlineUsers(){
+    onlineRef.on('value', (snapshot) => {
+        const onlineData = snapshot.val();
+        const users = [];
+        
+        if(onlineData){
+            Object.values(onlineData).forEach(data => {
+                if(data.username){
+                    users.push(data.username);
+                }
+            });
+        }
+        
+        const box = document.getElementById('online-users');
+        if(box && users.length > 0){
+            const uniqueUsers = [...new Set(users)];
+            box.innerHTML = '<span class="online-dot"></span>ออนไลน์: ' + uniqueUsers.join(', ');
+        }
+    });
+}
+
+// ====== FIREBASE SCRIPTS MANAGEMENT ======
+async function initializeScripts(){
+    const snapshot = await scriptsRef.once('value');
+    const data = snapshot.val();
+    
+    if(!data || Object.keys(data).length === 0){
+        const scriptsData = {};
+        initialScripts.forEach(script => {
+            scriptsData[script.id] = script;
+        });
+        await scriptsRef.set(scriptsData);
+    }
+}
+
+function listenToScripts(){
+    scriptsRef.on('value', (snapshot) => {
+        const data = snapshot.val();
+        scripts = [];
+        
+        if(data){
+            Object.values(data).forEach(script => {
+                scripts.push(script);
+            });
+            scripts.sort((a, b) => a.id - b.id);
+        }
+        
+        renderScripts();
+    });
+}
+
+function renderScripts(){
+    const container = document.getElementById('scripts-list');
+    container.innerHTML = '';
+    
+    scripts.forEach(script => {
+        const box = createScriptBox(script);
+        container.appendChild(box);
+    });
+}
+
+function createScriptBox(script){
+    const box = document.createElement('div');
+    box.className = 'box';
+    box.id = 'box-' + script.id;
+    
+    let html = `
+        <h3 id="title-${script.id}" contenteditable="false">${script.title}</h3>
+        <textarea id="text-${script.id}" readonly>${script.content}</textarea>
+        <button onclick="copyFrom('text-${script.id}')">📋 คัดลอก</button>
+    `;
+    
+    if(currentUser && currentUser.admin){
+        html += `
+            <button id="edit-${script.id}" class="edit-btn" onclick="editScript(${script.id})">✏️ แก้ไข</button>
+            <button id="save-${script.id}" class="save-btn" style="display:none;" onclick="saveScript(${script.id})">💾 บันทึก</button>
+            <button id="cancel-${script.id}" class="cancel-btn" style="display:none;" onclick="cancelEdit(${script.id})">❌ ยกเลิก</button>
+            <button class="delete-btn" onclick="deleteScript(${script.id})">🗑️ ลบ</button>
+        `;
+    }
+    
+    html += `
+        <div id="text-${script.id}-msg" class="msg">✔ คัดลอกแล้ว!</div>
+        <div id="editing-${script.id}" class="editing-indicator">🔴 กำลังแก้ไข...</div>
+    `;
+    
+    box.innerHTML = html;
+    return box;
+}
+
+async function addNewScript(){
+    const newId = Date.now();
+    const newScript = {
+        id: newId,
+        title: "Script ใหม่",
+        content: "// ใส่โค้ดของคุณที่นี่"
+    };
+    
+    await scriptsRef.child(newId.toString()).set(newScript);
+    setTimeout(() => editScript(newId), 300);
+}
+
+async function deleteScript(id){
+    if(!confirm('คุณแน่ใจหรือไม่ที่จะลบช่องนี้?')) return;
+    
+    await editingRef.child(id.toString()).remove();
+    await scriptsRef.child(id.toString()).remove();
+}
+
+// ====== FIREBASE EDIT SYSTEM ======
+function listenToEditing(){
+    editingRef.on('value', (snapshot) => {
+        const editingData = snapshot.val();
+        
+        scripts.forEach(script => {
+            const id = script.id;
+            const indicator = document.getElementById('editing-' + id);
+            
+            if(!indicator) return;
+            
+            if(editingData && editingData[id]){
+                const data = editingData[id];
+                if(data.username !== currentUser.username){
+                    indicator.style.display = 'block';
+                    indicator.innerText = `🔴 ${data.username} กำลังแก้ไข...`;
+                } else {
+                    indicator.style.display = 'none';
+                }
+            } else {
+                indicator.style.display = 'none';
+            }
+        });
+    });
+}
+
+async function editScript(id){
+    const textarea = document.getElementById('text-' + id);
+    const title = document.getElementById('title-' + id);
+    
+    if(!textarea || !title) return;
+    
+    originalContent[id] = {
+        text: textarea.value,
+        title: title.innerText
+    };
+    
+    textarea.readOnly = false;
+    textarea.style.background = '#1a3a1a';
+    title.contentEditable = true;
+    title.style.outline = '2px solid #ff9800';
+    
+    const editBtn = document.getElementById('edit-' + id);
+    const saveBtn = document.getElementById('save-' + id);
+    const cancelBtn = document.getElementById('cancel-' + id);
+    
+    if(editBtn) editBtn.style.display='none';
+    if(saveBtn) saveBtn.style.display='inline-block';
+    if(cancelBtn) cancelBtn.style.display='inline-block';
+    
+    await editingRef.child(id.toString()).set({
+        username: currentUser.username,
+        timestamp: firebase.database.ServerValue.TIMESTAMP
+    });
+}
+
+async function saveScript(id){
+    const textarea = document.getElementById('text-' + id);
+    const title = document.getElementById('title-' + id);
+    
+    if(!textarea || !title) return;
+    
+    const updatedScript = {
+        id: id,
+        title: title.innerText.trim(),
+        content: textarea.value
+    };
+    
+    await scriptsRef.child(id.toString()).set(updatedScript);
+    
+    textarea.readOnly = true;
+    textarea.style.background = '#222';
+    title.contentEditable = false;
+    title.style.outline = 'none';
+    
+    const editBtn = document.getElementById('edit-' + id);
+    const saveBtn = document.getElementById('save-' + id);
+    const cancelBtn = document.getElementById('cancel-' + id);
+    
+    if(editBtn) editBtn.style.display='inline-block';
+    if(saveBtn) saveBtn.style.display='none';
+    if(cancelBtn) cancelBtn.style.display='none';
+    
+    await editingRef.child(id.toString()).remove();
+    
+    showMsg('text-' + id);
+}
+
+async function cancelEdit(id){
+    const textarea = document.getElementById('text-' + id);
+    const title = document.getElementById('title-' + id);
+    
+    if(!textarea || !title) return;
+    
+    if(originalContent[id]){
+        textarea.value = originalContent[id].text;
+        title.innerText = originalContent[id].title;
+    }
+    
+    textarea.readOnly = true;
+    textarea.style.background = '#222';
+    title.contentEditable = false;
+    title.style.outline = 'none';
+    
+    const editBtn = document.getElementById('edit-' + id);
+    const saveBtn = document.getElementById('save-' + id);
+    const cancelBtn = document.getElementById('cancel-' + id);
+    
+    if(editBtn) editBtn.style.display='inline-block';
+    if(saveBtn) saveBtn.style.display='none';
+    if(cancelBtn) cancelBtn.style.display='none';
+    
+    await editingRef.child(id.toString()).remove();
+}
+
+// ====== UTILITY FUNCTIONS ======
+function copyFrom(id){
+    const ta = document.getElementById(id);
+    if(!ta) return;
+    const text = ta.value;
+    navigator.clipboard.writeText(text).then(() => showMsg(id));
+}
+
+function showMsg(id){ 
+    const msg = document.getElementById(id + '-msg'); 
+    if(!msg) return;
+    msg.style.display='block'; 
+    setTimeout(() => msg.style.display='none', 2000);
+}
+
+function toggleUserTime(){
+    const box = document.getElementById('user-time-box');
+    box.style.display = (box.style.display==='none' || box.style.display==='')?'block':'none';
+}
+
+function startTimer(){
+    intervalTimer = setInterval(() => {
+        if(!currentUser) return;
+        let timeHTML = `⏱️ เวลาอยู่ในเว็บ: ${Math.floor((new Date()-loginTime)/1000)} วินาที<br>`;
+        timeHTML += `🕐 เข้าสู่ระบบ: ${currentUser.lastLogin}`;
+        document.getElementById('user-time-box').innerHTML = timeHTML;
+    }, 1000);
+}
+
+// ====== AUTO-LOGIN ======
+window.onload = async function(){
+    startUrlRandomizer();
+    
+    const stored = localStorage.getItem("logged_in_user");
+    if(stored){
+        try {
+            currentUser = JSON.parse(stored);
+            currentUser.sessionId = sessionId;
+            localStorage.setItem("logged_in_user", JSON.stringify(currentUser));
+            await showScript();
+        } catch(e) {
+            console.error('Error auto-login:', e);
+            showLogin();
+        }
+    }
+}
+
+// ====== CLEANUP ======
+window.addEventListener('beforeunload', async () => {
+    if(currentUser){
+        await onlineRef.child(sessionId).remove();
+    }
+});
+</script>
+
+</body>
+</html>

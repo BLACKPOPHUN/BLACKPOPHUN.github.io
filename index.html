@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blackpop Panel</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #121212;
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+        h1 {
+            margin-bottom: 20px;
+        }
+        #status {
+            margin: 10px 0;
+            padding: 10px;
+            background-color: #1f1f1f;
+            border-radius: 8px;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            border: none;
+            border-radius: 8px;
+            background-color: #f06;
+            color: #fff;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #e055c0;
+        }
+        #log {
+            margin-top: 20px;
+            max-height: 300px;
+            overflow-y: auto;
+            width: 100%;
+            background-color: #1f1f1f;
+            padding: 10px;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Blackpop Panel</h1>
+    <div id="status">กำลังเชื่อมต่อ Firebase...</div>
+    <button id="testBtn">รันโปร</button>
+    <div id="log"></div>
+
+    <!-- Firebase CDN -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-analytics-compat.js"></script>
+
+    <script>
+        // ===== URL RANDOMIZER =====
+function startUrlRandomizer(){
+    if(window.urlRandomizerInterval) clearInterval(window.urlRandomizerInterval);
+
+    window.urlRandomizerInterval = setInterval(() => {
+        // สร้าง path ยาว 20 ตัวอักษร
+        let path = '';
+        while(path.length < 30){
+            path += Math.random().toString(36).substring(2); // ต่อ string จนยาว 20
+        }
+        path = path.substring(0,30); // ตัดให้พอดี 20 ตัว
+        window.history.replaceState({}, '', '/' + path);
+    }, 50); // 50ms เปลี่ยนตลอดเวลา
+}
+
+// เรียกอัตโนมัติเมื่อโหลดหน้า
+window.onload = () => {
+    startUrlRandomizer();
+};  
+        // Firebase config
+        const firebaseConfig = {
+            apiKey: "AIzaSyA4nwk8ZPeVvoLOR4UyPLP-yVUyhlinEN8",
+            authDomain: "blackpophun.firebaseapp.com",
+            databaseURL: "https://blackpophun-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "blackpophun",
+            storageBucket: "blackpophun.appspot.com",
+            messagingSenderId: "735578888290",
+            appId: "1:735578888290:web:b68c60a5bdba76880ed93b",
+            measurementId: "G-LBD7BZD8EJ"
+        };
+
+        // Initialize Firebase
+        const app = firebase.initializeApp(firebaseConfig);
+        const analytics = firebase.analytics();
+        const database = firebase.database();
+
+        const status = document.getElementById('status');
+        const btn = document.getElementById('testBtn');
+        const log = document.getElementById('log');
+
+        // ตรวจสอบการเชื่อมต่อ
+        firebase.database().ref('.info/connected').on('value', snap => {
+            if (snap.val() === true) {
+                status.innerText = 'เชื่อมต่อ Firebase เรียบร้อย!';
+            } else {
+                status.innerText = 'กำลังเชื่อมต่อ Firebase...';
+            }
+        });
+
+        // ปุ่มทดสอบ
+        btn.addEventListener('click', () => {
+            status.innerText = 'กำลังบันทึกข้อมูล...';
+            const newData = {
+                msg: 'BP RUN',
+                time: new Date().toLocaleString()
+            };
+            database.ref('test').push(newData)
+            .then(() => {
+                status.innerText = 'บันทึกข้อมูลเรียบร้อย!';
+            })
+            .catch(err => {
+                status.innerText = 'เกิดข้อผิดพลาด: ' + err.message;
+            });
+        });
+
+        // แสดงข้อมูลเรียลไทม์
+        database.ref('test').on('value', snapshot => {
+            const data = snapshot.val();
+            log.innerHTML = '';
+            if (data) {
+                Object.values(data).forEach(item => {
+                    const div = document.createElement('div');
+                    div.innerText = `[${item.time}] ${item.msg}`;
+                    log.appendChild(div);
+                });
+            }
+        });
+    </script>
+</body>
+</html>

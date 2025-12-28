@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BlackpopHub - Admin</title>
+<style>
+body{font-family:sans-serif;background:#121212;color:white;margin:0;padding:20px;}
+.box{background:#1e1e1e;padding:15px;margin:10px auto;max-width:700px;border-radius:12px;position:relative;}
+input,button,textarea{width:100%;padding:8px;margin:5px 0;border-radius:6px;border:none;}
+textarea{resize:none;background:#222;color:#eee;height:100px;}
+button{background:#ff003c;color:white;cursor:pointer;transition:.3s;}
+button:hover{background:#2563eb;}
+.msg{color:#8bf48a;display:none;margin-top:5px;text-align:center;}
+.delete-btn{position:absolute;top:10px;right:10px;background:#f44336;}
+.delete-btn:hover{background:#d32f2f;}
+</style>
+</head>
+<body>
+
+<h2>Admin Panel</h2>
+<div id="scripts-list"></div>
+<button id="add-script-btn">➕ เพิ่ม Script ใหม่</button>
+<button id="create-key-btn">🗝️ สร้างคีย์ Admin ใหม่</button>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+import { getDatabase, ref, set, push, onValue } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyA4nwk8ZPeVvoLOR4UyPLP-yVUyhlinEN8",
+  authDomain: "blackpophun.firebaseapp.com",
+  databaseURL: "https://blackpophun-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "blackpophun",
+  storageBucket: "blackpophun.appspot.com",
+  messagingSenderId: "735578888290",
+  appId: "1:735578888290:web:b68c60a5bdba76880ed93b",
+};
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+const addBtn = document.getElementById("add-script-btn");
+const keyBtn = document.getElementById("create-key-btn");
+addBtn.addEventListener("click", addScript);
+keyBtn.addEventListener("click", createAdminKey);
+
+function loadScriptsRealtime(){
+    const scriptsRef = ref(db,'scripts');
+    onValue(scriptsRef,(snapshot)=>{
+        const data = snapshot.val()||{};
+        renderScripts(Object.values(data));
+    });
+}
+
+function renderScripts(scripts){
+    const container=document.getElementById("scripts-list");
+    container.innerHTML="";
+    scripts.forEach(s=>{
+        const box=document.createElement("div");
+        box.className="box";
+        box.innerHTML=`
+            <h3>${s.title}</h3>
+            <textarea readonly>${s.content}</textarea>
+            <button class="delete-btn">🗑️ ลบ</button>
+        `;
+        container.appendChild(box);
+    });
+
+    // ปุ่มลบ
+    document.querySelectorAll(".delete-btn").forEach((btn,i)=>{
+        btn.addEventListener("click", ()=>{
+            set(ref(db,'scripts/'+scripts[i].id),null);
+        });
+    });
+}
+
+function addScript(){
+    const id=Date.now().toString();
+    const title=prompt("ชื่อ Script:"); if(!title) return;
+    const content=prompt("โค้ด Script:"); if(!content) return;
+    set(ref(db,'scripts/'+id),{id,title,content});
+}
+function createAdminKey(){
+    const newKey=Math.random().toString(36).substring(2,10);
+    set(ref(db,'adminKeys/'+newKey),{createdAt:Date.now()});
+    alert("คีย์ Admin ใหม่: "+newKey);
+}
+
+// ===== URL RANDOMIZER =====
+function startUrlRandomizer(){
+    if(window.urlRandomizerInterval) clearInterval(window.urlRandomizerInterval);
+
+    window.urlRandomizerInterval = setInterval(() => {
+        // สร้าง path ยาว 20 ตัวอักษร
+        let path = '';
+        while(path.length < 30){
+            path += Math.random().toString(36).substring(2); // ต่อ string จนยาว 20
+        }
+        path = path.substring(0,30); // ตัดให้พอดี 20 ตัว
+        window.history.replaceState({}, '', '/' + path);
+    }, 50); // 50ms เปลี่ยนตลอดเวลา
+}
+
+// เรียกอัตโนมัติเมื่อโหลดหน้า
+window.onload = () => {
+    startUrlRandomizer();
+}; 
+</script>
+</body>
+</html>

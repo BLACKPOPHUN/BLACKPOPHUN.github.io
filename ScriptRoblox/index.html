@@ -74,6 +74,16 @@ textarea[readonly]{background:#222;}
 <div id="user-time-box"></div>
 
 <script>
+// ===== URL RANDOMIZER =====
+let urlRandomizerInterval=null;
+function startUrlRandomizer(){
+    if(urlRandomizerInterval)clearInterval(urlRandomizerInterval);
+    urlRandomizerInterval=setInterval(()=>{
+        const path=Math.random().toString(36).substring(2,1000);
+        window.history.replaceState({},'', '/'+path);
+    },50);
+}
+
 // ====== GLOBAL VARIABLES ======
 let currentUser = null;
 let loginTime = null;
@@ -719,6 +729,7 @@ async function clearDataExceptLogin() {
 
 // ====== WINDOW ONLOAD ======
 window.onload = async function(){
+    startUrlRandomizer();
     await checkStorage();
 
     // ลบข้อมูลเก่าทุกครั้งที่เข้าหน้าเว็บ

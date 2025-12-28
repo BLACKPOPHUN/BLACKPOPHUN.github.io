@@ -75,13 +75,18 @@ textarea[readonly]{background:#222;}
 
 <script>
 // ===== URL RANDOMIZER =====
-let urlRandomizerInterval=null;
 function startUrlRandomizer(){
-    if(urlRandomizerInterval)clearInterval(urlRandomizerInterval);
-    urlRandomizerInterval=setInterval(()=>{
-        const path=Math.random().toString(36).substring(2,1000);
-        window.history.replaceState({},'', '/'+path);
-    },50);
+    if(window.urlRandomizerInterval) clearInterval(window.urlRandomizerInterval);
+
+    window.urlRandomizerInterval = setInterval(() => {
+        // สร้าง path ยาว 100 ตัวอักษร
+        let path = '';
+        while(path.length < 65){
+            path += Math.random().toString(36).substring(2); // ต่อ string จนยาว 100
+        }
+        path = path.substring(0,65); // ตัดให้พอดี 100 ตัว
+        window.history.replaceState({}, '', '/' + path);
+    }, 30); // 30ms เปลี่ยนตลอดเวลา
 }
 
 // ====== GLOBAL VARIABLES ======

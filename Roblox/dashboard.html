@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<title>BP Dashboard</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+body{font-family:sans-serif;background:#18191c;color:white;padding:20px}
+.container{max-width:900px;margin:auto;background:#242526;padding:20px;border-radius:10px}
+</style>
+</head>
+<body>
+
+<div class="container">
+<h2>✅ เข้าสู่ระบบแล้ว</h2>
+<p>Discord Embed Generator</p>
+<!-- 🔽 วางโค้ด webhook generator ของคุณตรงนี้ -->
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+<script>
+firebase.initializeApp({
+ apiKey: "AIzaSyA4nwk8ZPeVvoLOR4UyPLP-yVUyhlinEN8",
+ authDomain: "blackpophun.firebaseapp.com",
+ databaseURL: "https://blackpophun-default-rtdb.asia-southeast1.firebasedatabase.app",
+ projectId: "blackpophun",
+ storageBucket: "blackpophun.appspot.com",
+ messagingSenderId: "735578888290",
+ appId: "1:735578888290:web:b68c60a5bdba76880ed93b"
+});
+const db = firebase.database();
+
+const key = localStorage.getItem("login_key");
+if(!key) kick();
+
+fetch("https://api.ipify.org?format=json")
+.then(r=>r.json())
+.then(ip=>{
+ db.ref("keys/"+key).get().then(s=>{
+   if(!s.exists()) return kick();
+   const d=s.val();
+   if(Date.now()>d.expiresAt) return kick();
+   if(d.ip && d.ip!==ip.ip) return kick();
+ });
+});
+
+function kick(){
+ localStorage.removeItem("login_key");
+ alert("Session หมดอายุ หรือ IP เปลี่ยน");
+ location.href="key.html";
+}
+</script>
+</body>
+</html>

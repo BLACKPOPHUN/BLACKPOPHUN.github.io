@@ -9,15 +9,18 @@
 
 <style>
 body{background:#0f0f0f;color:white;font-family:sans-serif;text-align:center;padding:40px}
-button{padding:12px 28px;font-size:18px;cursor:pointer}
+input,button{padding:12px;font-size:16px;margin:5px}
 pre{background:#1a1a1a;padding:15px;margin-top:20px}
 </style>
 </head>
 <body>
 
 <h2>🔑 รับ Key (12 ชั่วโมง)</h2>
+<input id="uid" placeholder="UserId Roblox">
+<br>
 <button id="btn" onclick="createKey()">รับ Key</button>
-<pre id="out">ยังไม่มี Key</pre>
+
+<pre id="out">กรอก UserId แล้วกดรับคีย์</pre>
 
 <script>
 const firebaseConfig = {
@@ -33,48 +36,37 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
-// Device ID (ผูกเครื่อง)
-let deviceId = localStorage.getItem("device_id");
-if(!deviceId){
-    deviceId = "DEV-" + crypto.randomUUID();
-    localStorage.setItem("device_id", deviceId);
-}
-
 function genKey(){
-    return "BP-" +
+  return "BP-" +
     Math.random().toString(36).substr(2,4).toUpperCase() +
     "-" +
     Math.random().toString(36).substr(2,4).toUpperCase();
 }
 
-// เช็คว่ามี key ค้างอยู่ไหม
-db.ref("devices/"+deviceId).once("value").then(snap=>{
-    if(snap.exists() && Date.now() < snap.val().expire){
-        document.getElementById("btn").disabled = true;
-        document.getElementById("out").textContent =
-          "KEY: "+snap.val().key+
-          "\nหมดอายุ: "+new Date(snap.val().expire).toLocaleString();
-    }
-});
-
 function createKey(){
+  const uid = document.getElementById("uid").value.trim();
+  if(!uid) return alert("กรอก UserId");
+
+  db.ref("users/"+uid).once("value").then(snap=>{
+    if(snap.exists() && Date.now() < snap.val().expire){
+      document.getElementById("btn").disabled = true;
+      document.getElementById("out").textContent =
+        "คุณมี Key อยู่แล้ว\nKEY: "+snap.val().key+
+        "\nหมดอายุ: "+new Date(snap.val().expire).toLocaleString();
+      return;
+    }
+
     const key = genKey();
     const expire = Date.now() + 12*60*60*1000;
 
-    db.ref("devices/"+deviceId).set({
-        key: key,
-        expire: expire
-    });
-
-    db.ref("keys/"+key).set({
-        device: deviceId,
-        expire: expire
-    });
+    db.ref("users/"+uid).set({ key, expire });
+    db.ref("keys/"+key).set({ uid, expire });
 
     document.getElementById("btn").disabled = true;
     document.getElementById("out").textContent =
       "KEY: "+key+
       "\nหมดอายุ: "+new Date(expire).toLocaleString();
+  });
 }
 </script>
 

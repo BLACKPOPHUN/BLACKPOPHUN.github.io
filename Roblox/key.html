@@ -18,12 +18,14 @@ button{background:#00b3ff;color:black;font-weight:bold;cursor:pointer}
 </head>
 <body>
 
+<!-- ADMIN -->
 <div class="box">
 <h2>🔑 สร้างคีย์ (24 ชม.)</h2>
 <button onclick="generateKey()">สร้างคีย์</button>
 <div id="gen" class="result"></div>
 </div>
 
+<!-- LOGIN -->
 <div class="box">
 <h2>🔐 Login ด้วยคีย์</h2>
 <input id="keyInput" placeholder="ใส่คีย์">
@@ -31,6 +33,7 @@ button{background:#00b3ff;color:black;font-weight:bold;cursor:pointer}
 <div id="login" class="result"></div>
 </div>
 
+<!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 
@@ -44,64 +47,61 @@ firebase.initializeApp({
  messagingSenderId: "735578888290",
  appId: "1:735578888290:web:b68c60a5bdba76880ed93b"
 });
-const db = firebase.database();
-const DAY = 86400000;
 
-/* ===== CREATE KEY ===== */
+const db = firebase.database();
+const DAY = 24 * 60 * 60 * 1000;
+
+/* สร้างคีย์ */
 function generateKey(){
  const key = makeKey();
  const now = Date.now();
+
  db.ref("keys/"+key).set({
-   createdAt: now,
+   used:false,
+   createdAt:now,
    expiresAt: now + DAY
  });
- gen.innerHTML = `<span class="success">${key}</span>`;
+
+ document.getElementById("gen").innerHTML =
+  `<span class="success">${key}</span>`;
 }
 
-/* ===== LOGIN WEB ===== */
+/* Login */
 function login(){
  const key = keyInput.value.trim();
  if(!key) return;
 
- db.ref("keys/"+key).get().then(s=>{
-   if(!s.exists()) return show("login","คีย์ไม่ถูกต้อง","error");
-   if(Date.now()>s.val().expiresAt)
+ db.ref("keys/"+key).get().then(snap=>{
+   if(!snap.exists())
+     return show("login","คีย์ไม่ถูกต้อง","error");
+
+   const d = snap.val();
+   if(d.used)
+     return show("login","คีย์ถูกใช้แล้ว","error");
+
+   if(Date.now() > d.expiresAt)
      return show("login","คีย์หมดอายุ","error");
 
-   localStorage.setItem("login_key",key);
-   show("login","สำเร็จ","success");
-   setTimeout(()=>location.href="dashboard.html",800);
+   db.ref("keys/"+key).update({used:true});
+   localStorage.setItem("login_key", key);
+
+   show("login","เข้าสู่ระบบสำเร็จ","success");
+
+   setTimeout(()=>{
+     window.location.href = "dashboard.html";
+   },800);
  });
 }
 
-/* ===== API MODE (ROBLOX) ===== */
-const apiKey = new URLSearchParams(location.search).get("key");
-if(apiKey){
- fetch("https://api.ipify.org?format=json")
- .then(r=>r.json())
- .then(ip=>{
-  db.ref("keys/"+apiKey).get().then(s=>{
-   if(!s.exists()) return out("INVALID");
-   const d=s.val();
-   if(Date.now()>d.expiresAt) return out("EXPIRED");
-
-   if(!d.ip){
-     db.ref("keys/"+apiKey).update({ip:ip.ip});
-     return out("SUCCESS");
-   }
-   if(d.ip!==ip.ip) return out("IP_MISMATCH");
-   out("SUCCESS");
-  });
- });
-}
-
-function out(t){document.body.innerText=t}
+/* utils */
 function makeKey(){
- return "BP-"+Math.random().toString(36).substring(2,6).toUpperCase()
- +"-"+Math.random().toString(36).substring(2,6).toUpperCase();
+ return "BP-" +
+ Math.random().toString(36).substring(2,6).toUpperCase() +
+ "-" +
+ Math.random().toString(36).substring(2,6).toUpperCase();
 }
 function show(id,msg,type){
- document.getElementById(id).innerHTML=
+ document.getElementById(id).innerHTML =
  `<span class="${type}">${msg}</span>`;
 }
 </script>

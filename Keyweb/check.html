@@ -23,29 +23,29 @@ const db = firebase.database();
 
 const p = new URLSearchParams(location.search);
 const key = p.get("key");
-const device = p.get("device");
+const uid = p.get("uid");
 
-if(!key || !device){
-    document.body.innerText="INVALID";
+if(!key || !uid){
+  document.body.innerText="INVALID";
 }else{
-    db.ref("keys/"+key).once("value").then(snap=>{
-        if(!snap.exists()){
-            document.body.innerText="INVALID"; return;
-        }
+  db.ref("keys/"+key).once("value").then(snap=>{
+    if(!snap.exists()){
+      document.body.innerText="INVALID"; return;
+    }
 
-        const d = snap.val();
-        if(d.device !== device){
-            document.body.innerText="WRONG_DEVICE"; return;
-        }
+    const d = snap.val();
+    if(d.uid !== uid){
+      document.body.innerText="INVALID"; return;
+    }
 
-        if(Date.now() > d.expire){
-            document.body.innerText="EXPIRED";
-        }else{
-            document.body.innerText="SUCCESS";
-        }
-    }).catch(()=>{
-        document.body.innerText="ERROR";
-    });
+    if(Date.now() > d.expire){
+      document.body.innerText="EXPIRED";
+    }else{
+      document.body.innerText="SUCCESS";
+    }
+  }).catch(()=>{
+    document.body.innerText="ERROR";
+  });
 }
 </script>
 </head>

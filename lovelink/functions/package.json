@@ -1,0 +1,14 @@
+{
+  "name": "lovepage-functions",
+  "description": "Send LovePage answers to Discord webhook securely",
+  "engines": {
+    "node": "18"
+  },
+  "main": "index.js",
+  "dependencies": {
+    "firebase-admin": "^12.0.0",
+    "firebase-functions": "^5.0.0",
+    "node-fetch": "^3.3.2"
+  },
+  "private": true
+}

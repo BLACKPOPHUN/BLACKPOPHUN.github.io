@@ -91,7 +91,6 @@ function sendAnswer(answer){
     answer: answer,
     time: Date.now()
   });
-  alert("ส่งแล้วนะ 💖");
 }
 
 /* ===== ปุ่มไม่เป็นหนี + ดื้อ ===== */
@@ -107,7 +106,7 @@ function moveBtn(){
     Math.random() * (card.clientHeight - noBtn.offsetHeight) + "px";
 
   if(count >= 5){
-    sendAnswer("ไม่เป็น (ดื้อ 😈)");
+    sendAnswer("ดื้อ🥹กดไม่เป็น");
     count = 0;
   }
 }

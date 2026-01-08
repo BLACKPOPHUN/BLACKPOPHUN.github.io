@@ -2,64 +2,15 @@
 <html lang="th">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LovePage 💖</title>
-
-<link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;600&display=swap" rel="stylesheet">
+<title>LovePage</title>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-analytics-compat.js"></script>
-
-<style>
-body{
-  margin:0;
-  min-height:100vh;
-  display:flex;
-  justify-content:center;
-  align-items:center;
-  background:#ffe6f0;
-  font-family:'Prompt',sans-serif;
-}
-.card{
-  background:#fff;
-  width:360px;
-  height:340px;
-  padding:30px;
-  border-radius:25px;
-  box-shadow:0 10px 25px rgba(0,0,0,.15);
-  position:relative;
-  text-align:center;
-}
-button{
-  position:absolute;
-  padding:14px 25px;
-  border-radius:999px;
-  border:none;
-  font-size:18px;
-  cursor:pointer;
-}
-.yes{
-  background:linear-gradient(135deg,#ff9ebc,#ff6f91);
-  color:#fff;
-  bottom:30px;
-  left:50%;
-  transform:translateX(-50%);
-}
-.no{
-  background:#ffd6e8;
-  top:120px;
-  left:120px;
-}
-</style>
 </head>
 
 <body>
-<div class="card">
-  <h2>เป็นแฟนกับพี่นะ 🥺</h2>
-  <button class="no" id="noBtn">ไม่เป็น 💔</button>
-  <button class="yes" onclick="sendAnswer('เป็น ❤️')">เป็น ❤️</button>
-</div>
+<button onclick="sendAnswer('เป็น ❤️')">เป็น ❤️</button>
+<button onclick="sendAnswer('ไม่เป็น 💔')">ไม่เป็น 💔</button>
 
 <script>
 const firebaseConfig = {
@@ -69,48 +20,18 @@ const firebaseConfig = {
   projectId: "blackpophun",
   storageBucket: "blackpophun.firebasestorage.app",
   messagingSenderId: "735578888290",
-  appId: "1:735578888290:web:b68c60a5bdba76880ed93b",
-  measurementId: "G-LBD7BZD8EJ"
+  appId: "1:735578888290:web:b68c60a5bdba76880ed93b"
 };
 
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
-/* สร้าง config ครั้งเดียว */
-db.ref("config/discord").once("value").then(snap=>{
-  if(!snap.exists()){
-    db.ref("config/discord").set({ enabled:true });
-  }
-});
-
-/* ส่งคำตอบ */
 function sendAnswer(answer){
   db.ref("lovepage_answers").push({
     answer: answer,
     time: Date.now()
   });
 }
-
-/* ปุ่มไม่เป็นหนี + ดื้อ */
-let count = 0;
-const noBtn = document.getElementById("noBtn");
-const card = document.querySelector(".card");
-
-function moveBtn(){
-  count++;
-  noBtn.style.left =
-    Math.random() * (card.clientWidth - noBtn.offsetWidth) + "px";
-  noBtn.style.top =
-    Math.random() * (card.clientHeight - noBtn.offsetHeight) + "px";
-
-  if(count >= 5){
-    sendAnswer("ดื้อ🥹กดไม่เป็น");
-    count = 0;
-  }
-}
-
-noBtn.addEventListener("mouseover", moveBtn);
-noBtn.addEventListener("click", moveBtn);
-</script
+</script>
 </body>
 </html>

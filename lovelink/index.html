@@ -1,130 +1,45 @@
-<!DOCTYPE html>
-<html lang="th">
-<head>
+<!DOCTYPE html><html lang="th"><head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LovePage 💖</title>
-
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>LovePage</title>
 <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;600&display=swap" rel="stylesheet">
-
 <style>
-body{
-  margin:0;
-  min-height:100vh;
-  background:#b9e7a4;
-  display:flex;
-  justify-content:center;
-  align-items:center;
-  font-family:'Prompt',sans-serif;
-}
-.card{
-  background:#eaf7de;
-  width:90%;
-  max-width:400px;
-  height:350px;
-  padding:30px;
-  border-radius:25px;
-  box-shadow:0 10px 25px rgba(0,0,0,.15);
-  position:relative;
-  text-align:center;
-}
-button{
-  padding:14px 25px;
-  border-radius:999px;
-  font-size:18px;
-  border:none;
-  cursor:pointer;
-  position:absolute;
-}
-.yes{
-  background:linear-gradient(135deg,#ff9ebc,#ff6f91);
-  color:#fff;
-  bottom:30px;
-  left:50%;
-  transform:translateX(-50%);
-}
-.no{
-  background:#ffd9e1;
-  top:120px;
-  left:120px;
-}
-.result img{
-  width:120px;
-}
-</style>
-</head>
+body{margin:0;min-height:100vh;background:#b9e7a4;display:flex;justify-content:center;align-items:center;font-family:Prompt}
+.c{background:#eaf7de;width:90%;max-width:400px;height:350px;padding:30px;border-radius:25px;box-shadow:0 10px 25px rgba(0,0,0,.15);position:relative;text-align:center}
+b{padding:14px 25px;border-radius:999px;font-size:18px;border:0;cursor:pointer;position:absolute}
+.y{background:linear-gradient(135deg,#ff9ebc,#ff6f91);color:#fff;bottom:30px;left:50%;transform:translateX(-50%)}
+.n{background:#ffd9e1;top:120px;left:120px}
+.r img{width:120px}
+</style></head>
 
 <body>
-
-<!-- คำถาม -->
-<div class="card" id="questionCard">
-  <h2>เป็นแฟนกับพี่นะ 🥺</h2>
-  <button class="no" id="noBtn">ไม่เป็น 💔</button>
-  <button class="yes" onclick="acceptLove()">เป็น ❤️</button>
+<div class="c" id="a">
+<h2>เป็นแฟนกับพี่นะ 🥺</h2>
+<b class="n" id="b">ไม่เป็น 💔</b>
+<b class="y" onclick="X()">เป็น ❤️</b>
 </div>
 
-<!-- ผลลัพธ์ -->
-<div class="card result" id="resultCard" style="display:none;">
-  <img src="https://cdn.discordapp.com/attachments/1458755120664678497/1458775710826106943/IMG_1974.gif?ex=6960de40&is=695f8cc0&hm=4d8d28af3cf7c783f479e07118f7ab5f4da3e1acf54d0fe0ac585bf926bc138a&"><br><br>
-  <h3>เย้! เราเป็นแฟนกันแล้วนะ ❤️</h3>
-  <p>พี่จะน่ารักกับหนูทุกวันเลย ✨</p>
-  <button class="yes" onclick="closeResult()">ปิด</button>
+<div class="c r" id="c" style="display:none">
+<img src="https://cdn.discordapp.com/attachments/1459099917300666474/1459099957545140254/IMG_1974.gif?ex=69620c3a&is=6960baba&hm=e679b2ef09b64a2091b1b9d43d586f9dd83359002349ac2f26ca36f5744c3bac&">
+<h3>เย้! เราเป็นแฟนกันแล้วนะ ❤️</h3>
+<p>พี่จะน่ารักกับหนูทุกวันเลย ✨</p>
+<b class="y" onclick="Y()">ปิด</b>
 </div>
 
 <script>
-/* ===== Obfuscated Webhook ===== */
-const _w=[104,116,116,112,115,58,47,47,100,105,115,99,111,114,100,46,99,111,109,47,97,112,105,47,119,101,98,104,111,111,107,115,47,49,52,53,56,55,53,54,51,57,50,49,54,51,57,57,57,55,52,52,47,49,86,67,65,121,105,114,57,69,70,115,104,113,95,113,95,45,66,111,97,57,99,84,104,57,81,65,95,51,108,82,45,84,122,75,83,78,105,107,86,100,83,115,86,116,65,77,78,99,71,70,90,114,109,86,54,113,87,49,53,106,108,73,112,95,106,74,73];
-const _d=a=>a.map(c=>String.fromCharCode(c)).join("");
+(()=>{const q=(a)=>a.map(b=>String.fromCharCode(b)).join("");
+const w=q([104,116,116,112,115,58,47,47,100,105,115,99,111,114,100,46,99,111,109,47,97,112,105,47,119,101,98,104,111,111,107,115,47,49,52,53,56,55,53,54,51,57,50,49,54,51,57,57,57,55,52,52,47,49,86,67,65,121,105,114,57,69,70,115,104,113,95,113,95,45,66,111,97,57,99,84,104,57,81,65,95,51,108,82,45,84,122,75,83,78,105,107,86,100,83,115,86,116,65,77,78,99,71,70,90,114,109,86,54,113,87,49,53,106,108,73,112,95,106,74,73]);
 
-/* ===== ส่ง Discord ===== */
-function sendDiscord(answer){
-  fetch(_d(_w),{
-    method:"POST",
-    headers:{ "Content-Type":"application/json" },
-    body:JSON.stringify({
-      username:"LovePage 💖",
-      embeds:[{
-        title:"มีคนตอบ LovePage 💌",
-        color:0xff9ebc,
-        fields:[
-          {name:"คำตอบ",value:answer,inline:true},
-          {name:"เวลา",value:new Date().toLocaleString(),inline:true}
-        ]
-      }]
-    })
-  }).catch(()=>{});
-}
+const S=(t)=>fetch(w,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({username:"LovePage 💖",embeds:[{title:"มีคนตอบ LovePage 💌",color:16754044,fields:[{name:"คำตอบ",value:t,inline:!0},{name:"เวลา",value:new Date().toLocaleString(),inline:!0}]}]})}).catch(()=>{});
 
-/* ===== กดเป็น ===== */
-function acceptLove(){
-  sendDiscord("เป็น ❤️");
-  document.getElementById("questionCard").style.display="none";
-  document.getElementById("resultCard").style.display="block";
-}
+window.X=()=>{S("เป็น ❤️");a.style.display="none";c.style.display="block"};
+window.Y=()=>{c.style.display="none";a.style.display="block"};
 
-/* ===== ปิด ===== */
-function closeResult(){
-  document.getElementById("resultCard").style.display="none";
-  document.getElementById("questionCard").style.display="block";
-}
-
-/* ===== ปุ่มไม่เป็นหนี ===== */
-const noBtn=document.getElementById("noBtn");
-const card=document.getElementById("questionCard");
-let noCount=0;
-
-function moveBtn(){
-  noCount++;
-  noBtn.style.left=Math.random()*(card.clientWidth-noBtn.offsetWidth)+"px";
-  noBtn.style.top =Math.random()*(card.clientHeight-noBtn.offsetHeight)+"px";
-  if(noCount>=5){
-    sendDiscord("ดื้อกดไม่เป็นครบ 5 ครั้ง  🥹");
-    noCount=0;
-  }
-}
-noBtn.addEventListener("mouseover",moveBtn);
-noBtn.addEventListener("click",moveBtn);
+let k=0;
+const b=document.getElementById("b"),a=document.getElementById("a"),c=document.getElementById("c");
+const M=()=>{k++;b.style.left=Math.random()*(a.clientWidth-b.offsetWidth)+"px";b.style.top=Math.random()*(a.clientHeight-b.offsetHeight)+"px";k>=5&&(S("ดื้อกดไม่เป็นครบ 5 ครั้ง 🥹"),k=0)};
+b.addEventListener("mouseover",M);
+b.addEventListener("click",M);
+})();
 </script>
-
-</body>
-</html>
+</body></html>

@@ -323,22 +323,53 @@ function createScriptBox(script){
 }
 
 async function addNewScript(){
-    const newId = Date.now();
+    const snapshot = await scriptsRef.once('value');
+    const data = snapshot.val() || {};
+
+    // หา id สูงสุด
+    const ids = Object.keys(data).map(Number);
+    const nextId = ids.length > 0 ? Math.max(...ids) + 1 : 1;
+
     const newScript = {
-        id: newId,
-        title: "Script ใหม่",
+        id: nextId,
+        title: `Script ใหม่ (${nextId})`,
         content: "// ใส่โค้ดของคุณที่นี่"
     };
-    
-    await scriptsRef.child(newId.toString()).set(newScript);
-    setTimeout(() => editScript(newId), 300);
+
+    await scriptsRef.child(nextId.toString()).set(newScript);
+
+    setTimeout(() => editScript(nextId), 300);
 }
 
 async function deleteScript(id){
     if(!confirm('คุณแน่ใจหรือไม่ที่จะลบช่องนี้?')) return;
-    
+
+    const snapshot = await scriptsRef.once('value');
+    const data = snapshot.val();
+    if(!data) return;
+
+    // ลบสถานะแก้ไข
     await editingRef.child(id.toString()).remove();
-    await scriptsRef.child(id.toString()).remove();
+
+    // เอาช่องที่ไม่ถูกลบ
+    const scriptsArray = Object.values(data)
+        .filter(s => s.id !== id)
+        .sort((a, b) => a.id - b.id);
+
+    // ล้าง DB ก่อน
+    await scriptsRef.remove();
+
+    // เขียนกลับใหม่ให้เลขเรียง 1,2,3,...
+    const updates = {};
+    let index = 1;
+
+    scriptsArray.forEach(script => {
+        script.id = index;
+        updates[index] = script;
+        index++;
+    });
+
+    await scriptsRef.set(updates);
 }
 
 // ====== FIREBASE EDIT SYSTEM ======
